@@ -68,18 +68,17 @@ for R in 1:n_steps
     nroots = 1
 
     # get integrals
-    mf = FermiCG.pyscf_do_scf(pymol)
+    mf = pyscf_do_scf(pymol)
     nbas = size(mf.mo_coeff)[1]
-    ints = FermiCG.pyscf_build_ints(mol,mf.mo_coeff, zeros(nbas,nbas));
+    ints = pyscf_build_ints(mol,mf.mo_coeff, zeros(nbas,nbas));
     # localize orbitals
     C = mf.mo_coeff
-    Cl = FermiCG.localize(mf.mo_coeff,"lowdin",mf)
-    FermiCG.pyscf_write_molden(mol,Cl,filename="lowdin.molden")
-    S = FermiCG.get_ovlp(mf)
+    Cl = localize(mf.mo_coeff,"lowdin",mf)
+    S = get_ovlp(mf)
     U =  C' * S * Cl
     println(" Rotate Integrals")
     flush(stdout)
-    ints = FermiCG.orbital_rotation(ints,U)
+    ints = orbital_rotation(ints,U)
     println(" done.")
     flush(stdout)
 
@@ -94,7 +93,7 @@ for R in 1:n_steps
     #e_cmf, U, d1  = FermiCG.cmf_oo(ints, clusters, init_fspace, d1,
                                 #max_iter_oo=40, verbose=0, gconv=1e-6, method="bfgs")                            ints = orbital_rotation(ints, U)
     push!(energies_cmf,e_cmf)
-    FermiCG.pyscf_write_molden(mol,Cl*U,filename="cmf.molden")
+    ClusterMeanField.pyscf_write_molden(mol,Cl*U,filename="cmf.molden_H12")
     println(energies_cmf)
 end
 close(io)
