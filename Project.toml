@@ -1,0 +1,8 @@
+[deps]
+ActiveSpaceSolvers = "f8e94ea7-44cc-4f7e-92b7-2a8da6f47aca"
+BlockDavidson = "b4c031f8-e7c9-4879-896c-063a10ff8103"
+ClusterMeanField = "3e8e530f-db5a-4e5f-8d4d-9676e9551b72"
+FermiCG = "855c3b3a-d9bb-4919-8b00-0b3cfbdffb6f"
+InCoreIntegrals = "d8079e1f-d74b-4a3d-abb0-c0b53e3a8379"
+QCBase = "0dbae682-d491-4cbc-9a73-7148926f1b63"
+RDM = "e382014c-6717-46ba-99dc-880f59d7a5e4"
