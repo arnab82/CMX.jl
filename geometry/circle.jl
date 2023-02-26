@@ -1,4 +1,4 @@
-
+#=
 function get_circle_coordinates(center_x, center_y,center_z ,radius, num_points)
     coordinates= []
 
@@ -52,3 +52,29 @@ for R in 1:n_steps
     new_coordinates=get_stretched_geometry(tmp,scale)
     display(new_coordinates)
 end 
+=#
+
+using Printf
+function get_circle_coordinates(center_x, center_y,center_z ,radius, num_points)
+    coordinates= []
+        push!(coordinates,num_points*2)
+    for i in 1:num_points
+        angle = 2 * π * i / num_points
+        x=center_x+0.0
+        y=  center_y+ radius * cos(angle)
+        z=  center_z+ radius * sin(angle)
+        push!(coordinates,@sprintf("%6s %24.16f %24.16f %24.16f ","H", x,y,z))
+    end
+    scale=π/36
+    for i in 1:num_points
+        angle = 2 * π * i / num_points+(scale)
+        x=center_x+0.0
+        y=  center_y+ radius * cos(angle)
+        z=  center_z+ radius * sin(angle)
+        push!(coordinates,@sprintf("%6s %24.16f %24.16f %24.16f" ,"H", x,y,z))
+    end
+    return coordinates
+
+end
+
+display(get_circle_coordinates(0.0,0.0,0.0,2,4))
