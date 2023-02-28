@@ -46,12 +46,13 @@ end
 
 basis="sto-3g"
 n_steps = 50
-step_size = .03
+step_size = .025
 energies_cmf=[]
 io = open("traj_H8_RING_new.xyz", "w");
 for R in 1:n_steps
     scale = 1+R*step_size
-    if R<18
+    angle_num=50
+    #=if R<18
         angle_num=18
     elseif 17<R<24
         angle_num=21
@@ -59,15 +60,18 @@ for R in 1:n_steps
         angle_num=24
     else 
         angle_num=28
-    end
+    end=#
     for r in 1:angle_num
         xyz = @sprintf("%5i\n\n", 8)
         if R<18
-            scale1=π/12+(r*π/135)
+            scale1=π/13.72+(r*π/290)
+            c= get_circle_coordinates(0.0,0.0,0.0,2*scale,4,r,scale1,π/13.72)
+        elseif 17<R<35 
+            scale1=π/18+(r*π/290)
+            c= get_circle_coordinates(0.0,0.0,0.0,1.6*scale,4,r,scale1,π/18)
+        else
+            scale1=π/12+(r*π/290)
             c= get_circle_coordinates(0.0,0.0,0.0,1.6*scale,4,r,scale1,π/12)
-        else 
-            scale1=π/30+(r*π/135)
-            c= get_circle_coordinates(0.0,0.0,0.0,1.6*scale,4,r,scale1,π/24)
         end
         #println(c) 
         tmp=[]
