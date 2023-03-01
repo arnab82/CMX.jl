@@ -118,7 +118,7 @@ H4 = dot(sig, sig)
 H5 = FermiCG.compute_expectation_value_parallel(sig, cluster_ops, clustered_ham)
 println(H5)
 println("********************************************************************************")
-println("Cioslowski approach of CMX","\n\n\n")
+#println("Cioslowski approach of CMX","\n\n\n")
 println("********************************************************************************")
 I_1=H1[1]
 I_2=H2[1]-I_1*H1[1]
@@ -127,19 +127,14 @@ I_4=H4[1]-I_1*H3[1]-3*I_2*H2[1]-3*I_3*H1[1]
 I_5=H5[1]-I_1*H4[1]-4*I_2*H3[1]-6*I_3*H2[1]-4*I_4*H1[1]
 #I_6=H6[1]-I_1*H5[1]-5*I_2*H4[1]-10*I_3*H3[1]-10*I_4*H2[1]-5*I_5*H1[1]
 #I_7=H7[1]-I_1*H6[1]-6*I_2*H5[1]-15*I_3*H4[1]-20*I_4*H3[1]-15*I_5*H2[1]
-E_2=I_1-(I_2*I*2/I_3)
-display(E_2)
-E_3=I_1-(I_2*I*2/I_3)-(1/I_3)*((I_2*I_4-I_3*I_3)*(I_2*I_4-I_3*I_3)/(I_5*I_3-I_4*I_4))
-display(E_3)
-println("the correlation energy is",E_2-I_1,E_3-I_1,"\n\n\n")
-#
+
 #KNOWLES approach of CMX
 println("****************************************************")
 println("KNOWLES appraoch to calculate connected moment expansion","\n\n\n")
 E_K2=I_1-(I_2*I_2/I_3)*(1+(((I_4*I_2-I_3*I_3)^2)/(I_2*I_2*(I_5*I_3-I_4*I_4))))
 display(E_K2)
 println("KNOWLES appraoch of pade approximant to calculate connected moment expansion","\n\n\n")
-I_VEC=[I_2; I_3]
+#=I_VEC=[I_2; I_3]
 I_MAT=[I_3 I_4;I_4 I_5]
 #I_V=[I_2;I_3;I_4]
 #I_M=[I_3 I_4 I_5;I_4 I_5 I_6;I_5 I_6 I_7]

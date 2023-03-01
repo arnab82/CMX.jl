@@ -49,8 +49,7 @@ basis="sto-3g"
 n_steps = 70
 step_size = .025
 energies_cmf=[]
-energies_cmx=[]
-energies_pt2=[]
+
 
 io = open("traj_H6_RING_new.xyz", "w");
 for R in 1:n_steps
@@ -121,12 +120,9 @@ for R in 1:n_steps
         ClusterMeanField.pyscf_write_molden(pymol,Cl*U,filename="cmf.molden")
         #println(e_cmf)
         push!(energies_cmf,e_cmf)
-        push!(energies_cmx,E_K2)
     
     end
-    println(energies_cmf)
-    println(energies_cmx)
-    println(energies_pt2)
+
 end
 close(io)
 

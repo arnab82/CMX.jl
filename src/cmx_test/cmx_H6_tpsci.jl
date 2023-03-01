@@ -53,7 +53,7 @@ energies_cmx=[]
 energies_pt2=[]
 
 io = open("traj_H6_RING_new.xyz", "w");
-for R in 56:70
+for R in 1:n_steps
     scale = 1+R*step_size
     angle_num=70
     println(R)
@@ -140,29 +140,39 @@ for R in 56:70
         cluster_ops = FermiCG.compute_cluster_ops(cluster_bases, ints);
 
         FermiCG.add_cmf_operators!(cluster_ops, cluster_bases, ints, d1.a, d1.b);
-
+                
         ref_fock = FermiCG.FockConfig(init_fspace)
+        display(ref_fock)
+        display(clusters)
+        cmfstate = FermiCG.TPSCIstate(clusters, FockConfig(init_fspace),R=1,T=Float64)
 
+        cmfstate[FermiCG.FockConfig(init_fspace)][FermiCG.ClusterConfig([1,1,1,1])] = [1.0]
+        display(cmfstate)
+        sig = FermiCG.open_matvec_thread(cmfstate, cluster_ops, clustered_ham, nbody=4, thresh=1e-6, prescreen=true)
+        display(size(sig))
 
-        ψ = FermiCG.BSTstate(clusters, FockConfig(init_fspace), cluster_bases)
-        #ept2 = FermiCG.compute_pt2_energy(ψ, cluster_ops, clustered_ham, thresh_foi=1e-6,verbose=1)
-        #println("the value of pt2 correction energy value is",total_pt2)
-        display(ψ)
-        σ = FermiCG.build_compressed_1st_order_state(ψ, cluster_ops, clustered_ham, nbody=4, thresh=1e-5)
-        σ = FermiCG.compress(σ, thresh=1e-4)
+        FermiCG.clip!(sig, thresh=1e-5)
+        display(size(sig))
 
-        #H = FermiCG.nonorth_dot(ψ,σ)
-        H1 = FermiCG.compute_expectation_value(ψ, cluster_ops, clustered_ham)
+        # <H> = (<0|H)|0> = <sig|0>
+        H1 = dot(sig, cmfstate)
+        println(H1)
+        # <HH> = (<0|H)(H|0>) = <sig|sig>
+        H2 = dot(sig, sig)
 
-        H2 = FermiCG.orth_dot(σ,σ)
-        H3 = FermiCG.compute_expectation_value(σ, cluster_ops, clustered_ham)
-        #compute_expectation_value is not working; dimension mismatch
+        # <HHH> = (<0|H)H(H|0>) = <sig|H|sig>
+        H3 = FermiCG.compute_expectation_value_parallel(sig, cluster_ops, clustered_ham)
 
-        sigma2 = FermiCG.build_compressed_1st_order_state(σ, cluster_ops, clustered_ham, nbody=4, thresh=1e-5)
-        sigma2_compressed = FermiCG.compress(sigma2, thresh=1e-4)
+        # |sig> = H|sig> = HH|0>
+        sig = FermiCG.open_matvec_thread(cmfstate, cluster_ops, clustered_ham, nbody=4, thresh=1e-6, prescreen=true)
+        FermiCG.clip!(sig, thresh=1e-5)
 
-        H4 = FermiCG.orth_dot(sigma2_compressed,sigma2_compressed)
-        H5 = FermiCG.compute_expectation_value(sigma2_compressed, cluster_ops, clustered_ham)
+        # <HHHH> = (<0|HH)(HH|0>) = <sig|sig>
+        H4 = dot(sig, sig)
+
+        # <HHHH> = (<0|HH)H(HH|0>) = <sig|H|sig>
+        H5 = FermiCG.compute_expectation_value_parallel(sig, cluster_ops, clustered_ham)
+
         I_1=H1[1]
         I_2=H2[1]-I_1*H1[1]
         I_3=H3[1]-I_1*H2[1]-2*I_2*H1[1]

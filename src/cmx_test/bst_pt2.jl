@@ -53,7 +53,7 @@ energies_cmx=[]
 energies_pt2=[]
 
 io = open("traj_H6_RING_new.xyz", "w");
-for R in 56:70
+for R in 1:20
     scale = 1+R*step_size
     angle_num=70
     println(R)
@@ -145,36 +145,12 @@ for R in 56:70
 
 
         ψ = FermiCG.BSTstate(clusters, FockConfig(init_fspace), cluster_bases)
-        #ept2 = FermiCG.compute_pt2_energy(ψ, cluster_ops, clustered_ham, thresh_foi=1e-6,verbose=1)
-        #println("the value of pt2 correction energy value is",total_pt2)
-        display(ψ)
-        σ = FermiCG.build_compressed_1st_order_state(ψ, cluster_ops, clustered_ham, nbody=4, thresh=1e-5)
-        σ = FermiCG.compress(σ, thresh=1e-4)
-
-        #H = FermiCG.nonorth_dot(ψ,σ)
-        H1 = FermiCG.compute_expectation_value(ψ, cluster_ops, clustered_ham)
-
-        H2 = FermiCG.orth_dot(σ,σ)
-        H3 = FermiCG.compute_expectation_value(σ, cluster_ops, clustered_ham)
-        #compute_expectation_value is not working; dimension mismatch
-
-        sigma2 = FermiCG.build_compressed_1st_order_state(σ, cluster_ops, clustered_ham, nbody=4, thresh=1e-5)
-        sigma2_compressed = FermiCG.compress(sigma2, thresh=1e-4)
-
-        H4 = FermiCG.orth_dot(sigma2_compressed,sigma2_compressed)
-        H5 = FermiCG.compute_expectation_value(sigma2_compressed, cluster_ops, clustered_ham)
-        I_1=H1[1]
-        I_2=H2[1]-I_1*H1[1]
-        I_3=H3[1]-I_1*H2[1]-2*I_2*H1[1]
-        I_4=H4[1]-I_1*H3[1]-3*I_2*H2[1]-3*I_3*H1[1]
-        I_5=H5[1]-I_1*H4[1]-4*I_2*H3[1]-6*I_3*H2[1]-4*I_4*H1[1]
-        E_K2=I_1-(I_2*I_2/I_3)*(1+(((I_4*I_2-I_3*I_3)^2)/(I_2*I_2*(I_5*I_3-I_4*I_4))))
-        cmx_2=E_K2+nuc_energy
-        push!(energies_cmx,cmx_2)
+        ept2 ,total_pt2= FermiCG.compute_pt2_energy(ψ, cluster_ops, clustered_ham, thresh_foi=1e-6,verbose=1)
+        println("the value of pt2 correction energy value is",total_pt2)
+        push!(energies_pt2,total_pt2)
         end
     println(energies_cmf)
-    println(energies_cmx)
-    #println(energies_pt2)
+    println(energies_pt2)
 end
 close(io)
 
