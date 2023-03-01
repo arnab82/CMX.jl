@@ -11,7 +11,7 @@ using Arpack
 using JLD2
 using Plots
 using ClusterMeanField
-
+using ActiveSpaceSolvers
 
 function get_circle_coordinates(center_x, center_y,center_z ,radius, num_points,R,scale1,scale)
     coordinates= []
@@ -47,11 +47,13 @@ end
 basis="sto-3g"
 n_steps = 70
 step_size = .025
-energies_cmf=[]
+fci_energies=[]
+
 io = open("traj_H6_RING_new.xyz", "w");
 for R in 1:n_steps
     scale = 1+R*step_size
     angle_num=70
+    println(R)
     for r in 1:angle_num
         xyz = @sprintf("%5i\n\n", 6)
         if R<26
@@ -79,6 +81,32 @@ for R in 1:n_steps
         println(xyz)
         write(io, xyz);
         
+        na = 3
+        nb = 3
+
+        nroots = 1
+
+        # get integrals
+        mf = pyscf_do_scf(pymol)
+        nbas = size(mf.mo_coeff)[1]
+        ints = pyscf_build_ints(pymol,mf.mo_coeff, zeros(nbas,nbas));
+        nelec = na + nb
+        norb = size(ints.h1,1)
+        ansatz = FCIAnsatz(norb, na, nb)
+        solver = SolverSettings(nroots=1, package="Arpack")
+        solution = solve(ints, ansatz, solver)
+        display(solution)
+        println(typeof(FCIAnsatz))
+        #=pyscf = pyimport("pyscf")
+        pyscf.lib.num_threads(1)
+        fci = pyimport("pyscf.fci")
+        cisolver = fci.FCI(mf)
+        cisolver.max_cycle = 400
+        cisolver.conv_tol = 1e-8
+        e_fci, v_fci = cisolver.kernel(ints.h1, ints.h2, norb, nelec, ecore=0, nroots =nroots,verbose=1)=#
+        push!(fci_energies,solution.energies[1])
     end
+    println(fci_energies)
 end
 close(io)
+#plot(fci_energies)

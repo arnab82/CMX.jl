@@ -73,11 +73,11 @@ for R in range(n_steps):
             scale1=math.pi/13.72+(r*math.pi/290)
             c= get_circle_coordinates(0.0,0.0,0.0,1.6*scale,3,r,scale1,math.pi/13.72)
         elif 25<R<50 :
-            scale1=math.pi/18+(r*math.pi/290)
-            c= get_circle_coordinates(0.0,0.0,0.0,1.6*scale,3,r,scale1,math.pi/18)
+            scale1=math.pi/21.5+(r*math.pi/290)
+            c= get_circle_coordinates(0.0,0.0,0.0,1.6*scale,3,r,scale1,math.pi/21.5)
         else:
-            scale1=math.pi/24+(r*math.pi/290)
-            c= get_circle_coordinates(0.0,0.0,0.0,1.6*scale,3,r,scale1,math.pi/24)
+            scale1=math.pi/28.5+(r*math.pi/290)
+            c= get_circle_coordinates(0.0,0.0,0.0,1.6*scale,3,r,scale1,math.pi/28.5)
         #print(c) 
         tmp=[]
         tmp.append(["H",[c[0][0], c[0][1], c[0][2]]])
