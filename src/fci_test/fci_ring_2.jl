@@ -11,7 +11,7 @@ using Arpack
 using JLD2
 using Plots
 using ClusterMeanField
-
+using ActiveSpaceSolvers
 
 function get_circle_coordinates(center_x, center_y,center_z ,radius, num_points,R,scale1,scale)
     coordinates= []
@@ -44,22 +44,18 @@ function get_circle_coordinates(center_x, center_y,center_z ,radius, num_points,
 
 end
 
-
 basis="sto-3g"
 n_steps = 70
 step_size = .025
-energies_cmf=[]
-energies_cmx=[]
-energies_pt2=[]
+fci_energies=[]
 
 io = open("traj_H6_RING_new.xyz", "w");
-for R in 1:20
+for R in 1:n_steps
     scale = 1+R*step_size
     angle_num=70
     println(R)
     for r in 1:angle_num
         xyz = @sprintf("%5i\n\n", 6)
-
         scale1=π/24+(r*π/250)
         c= get_circle_coordinates(0.0,0.0,0.0,1.6*scale,3,r,scale1,π/24)
         tmp=[]
@@ -76,10 +72,9 @@ for R in 1:20
         println(xyz)
         write(io, xyz);
         
-        clusters    = [(1:2),(3:4),(5:6)]
-        init_fspace = [(1,1),(1,1),(1,1)]
         na = 3
         nb = 3
+
         nroots = 1
 
         # get integrals
@@ -88,64 +83,21 @@ for R in 1:20
         ints = pyscf_build_ints(pymol,mf.mo_coeff, zeros(nbas,nbas));
         nelec = na + nb
         norb = size(ints.h1,1)
-        # localize orbitals
-        C = mf.mo_coeff
-        Cl = localize(mf.mo_coeff,"lowdin",mf)
-        ClusterMeanField.pyscf_write_molden(pymol,Cl,filename="lowdin.molden")
-        S = get_ovlp(mf)
-        U =  C' * S * Cl
-        println(" Rotate Integrals")
-        flush(stdout)
-        ints = orbital_rotation(ints,U)
-        println(" done.")
-        flush(stdout)
-        mf = pyscf_do_scf(pymol)
-        pyscf = pyimport("pyscf")
+        ansatz = FCIAnsatz(norb, na, nb)
+        solver = SolverSettings(nroots=1, package="Arpack")
+        solution = solve(ints, ansatz, solver)
+        display(solution)
+        println(typeof(FCIAnsatz))
+        #=pyscf = pyimport("pyscf")
         pyscf.lib.num_threads(1)
-        nuc_energy=mf.energy_nuc()
-        println("the nuclear repulsion energy is ",nuc_energy)
-        #
-        # define clusters
-        clusters = [MOCluster(i,collect(clusters[i])) for i = 1:length(clusters)]
-        display(clusters)
-
-        rdm1 = zeros(size(ints.h1))
-        #d1 = RDM1(n_orb(ints))
-        e_cmf, U, d1  = ClusterMeanField.cmf_oo_diis(ints, clusters, init_fspace, RDM1(rdm1, rdm1), verbose=0, diis_start=3)
-        #e_cmf, U, d1  = FermiCG.cmf_oo(ints, clusters, init_fspace, d1,
-                                    #max_iter_oo=40, verbose=0, gconv=1e-6, method="bfgs")
-        ClusterMeanField.pyscf_write_molden(pymol,Cl*U,filename="cmf.molden")
-        #println(e_cmf)
-        push!(energies_cmf,e_cmf)
-        ints = FermiCG.orbital_rotation(ints,U)
-
-        e_ref = e_cmf - ints.h0
-
-        max_roots = 100
-
-        cluster_bases = FermiCG.compute_cluster_eigenbasis(ints, clusters, verbose=0, max_roots=max_roots,
-                                                        init_fspace=init_fspace, rdm1a=d1.a, rdm1b=d1.b, T=Float64)
-
-
-        clustered_ham = FermiCG.extract_ClusteredTerms(ints, clusters)
-
-        #
-        cluster_ops = FermiCG.compute_cluster_ops(cluster_bases, ints);
-
-        FermiCG.add_cmf_operators!(cluster_ops, cluster_bases, ints, d1.a, d1.b);
-
-        ref_fock = FermiCG.FockConfig(init_fspace)
-
-
-        ψ = FermiCG.BSTstate(clusters, FockConfig(init_fspace), cluster_bases)
-
-        ept2 = FermiCG.compute_pt2_energy(ψ, cluster_ops, clustered_ham, thresh_foi=1e-6,verbose=1)
-
-        println("the value of pt2 correction energy value is",total_pt2)
-        push!(energies_pt2,total_pt2)
-        end
-    println(energies_cmf)
-    println(energies_pt2)
+        fci = pyimport("pyscf.fci")
+        cisolver = fci.FCI(mf)
+        cisolver.max_cycle = 400
+        cisolver.conv_tol = 1e-8
+        e_fci, v_fci = cisolver.kernel(ints.h1, ints.h2, norb, nelec, ecore=0, nroots =nroots,verbose=1)=#
+        push!(fci_energies,solution.energies[1])
+    end
+    println(fci_energies)
 end
 close(io)
-
+#plot(fci_energies)
