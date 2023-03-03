@@ -51,7 +51,7 @@ step_size = .025
 energies_cmf=[]
 
 
-io = open("traj_H6_RING_new.xyz", "w");
+io = open("traj_H6.xyz", "w");
 for R in 1:n_steps
     scale = 1+R*step_size
     angle_num=70
@@ -113,7 +113,7 @@ for R in 1:n_steps
         push!(energies_cmf,e_cmf)
     
     end
-
+    println(energies_cmf)
 end
 close(io)
 

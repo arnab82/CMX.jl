@@ -64,7 +64,6 @@ e_fci, v_fci = cisolver.kernel(ints.h1, ints.h2, norb, nelec, ecore=0, nroots =n
 println(e_fci)
 
 
-error("vdshcvdsc")
 n_steps=80
 step_size = 0.03
 fci_energies=[]

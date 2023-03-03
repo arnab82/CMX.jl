@@ -49,7 +49,7 @@ n_steps = 70
 step_size = .025
 fci_energies=[]
 
-io = open("traj_H6_RING_new.xyz", "w");
+io = open("traj_H6", "w");
 for R in 1:n_steps
     scale = 1+R*step_size
     angle_num=70
