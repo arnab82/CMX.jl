@@ -70,21 +70,22 @@ B.append(A)
 B=np.array(B)
 
 B=B.reshape(70,70)
+print(type(B))
 print(np.shape(B))
 from mpl_toolkits import mplot3d
 import numpy
 from matplotlib import pyplot as plt
 radius, angle = numpy.meshgrid(radius, angle)
-
 ax = plt.axes(projection ='3d')
 ax.plot_wireframe(radius, angle, B, color ='blue')
 ax.plot_surface(radius, angle, B,cmap='magma', edgecolor='none')
+plot_sct = ax.scatter(radius, angle, B, color='red')
 ax.set_xlabel(' Radius of ring in x-axis')
 ax.set_ylabel('angle in y-axis')
 ax.set_zlabel('fci energy')
 ax.set_title('A 3D wireframe plot')
-ax.set_title('A 3D surface plot')
-plt.savefig('3d_radius.png')
+ax.set_title('A 3D scatter plot')
+plt.savefig('3d_scatter.png')
 plt.show()
 
 
