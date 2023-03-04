@@ -88,9 +88,9 @@ for R in 1:n_steps
     nroots = 1
 
     # get integrals
-    mf = FermiCG.pyscf_do_scf(pymol)
+    mf = pyscf_do_scf(pymol)
     nbas = size(mf.mo_coeff)[1]
-    ints = FermiCG.pyscf_build_ints(mol,mf.mo_coeff, zeros(nbas,nbas));
+    ints = pyscf_build_ints(mol,mf.mo_coeff, zeros(nbas,nbas));
     nelec = na + nb
     norb = size(ints.h1,1)
     #=ansatz = FCIAnsatz(norb, na, nb)
@@ -104,6 +104,7 @@ for R in 1:n_steps
     cisolver.max_cycle = 200
     cisolver.conv_tol = 1e-8
     e_fci, v_fci = cisolver.kernel(ints.h1, ints.h2, norb, nelec, ecore=0, nroots =nroots,verbose=8)
+    e_fci=e_fci+ints.h0
     push!(fci_energies,e_fci)
     display(fci_energies)
 end

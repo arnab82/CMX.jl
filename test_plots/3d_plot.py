@@ -57,7 +57,7 @@ angle=[]
 increment=math.pi/250
 for r in range(n_steps):
     scale = 1+r*increment
-    x=math.pi/24
+    x=(math.pi/24)*scale
     angle.append(x)
 print(angle)
 energy=[] 
@@ -79,13 +79,13 @@ radius, angle = numpy.meshgrid(radius, angle)
 ax = plt.axes(projection ='3d')
 ax.plot_wireframe(radius, angle, B, color ='blue')
 ax.plot_surface(radius, angle, B,cmap='magma', edgecolor='none')
-plot_sct = ax.scatter(radius, angle, B, color='red')
+#plot_sct = ax.scatter(radius, angle, B, color='red')
 ax.set_xlabel(' Radius of ring in x-axis')
 ax.set_ylabel('angle in y-axis')
 ax.set_zlabel('fci energy')
 ax.set_title('A 3D wireframe plot')
-ax.set_title('A 3D scatter plot')
-plt.savefig('3d_scatter.png')
+ax.set_title(' 3D surface plot')
+plt.savefig('3d_surface.png')
 plt.show()
 
 
