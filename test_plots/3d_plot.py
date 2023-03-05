@@ -32,19 +32,14 @@ for R in range(n_steps):
     radius.append(x)
 print(radius)
 
-angle=[]
-increment=math.pi/250
-for r in range(n_steps):
-    scale = 1+r*increment
-    x=(math.pi/24)*scale
-    angle.append(x)
-print(angle)
+angle=[7.5,8.219999999999999, 8.939999999999998, 9.66, 10.379999999999999, 11.1, 11.82, 12.540000000000001, 13.259999999999998, 13.979999999999999, 14.700000000000003, 15.419999999999998, 16.14, 16.860000000000003, 17.58, 18.3, 19.02, 19.74, 20.46, 21.18, 21.9, 22.619999999999997, 23.339999999999996, 24.06, 24.779999999999998, 25.5, 26.220000000000006, 26.939999999999994, 27.659999999999997, 28.380000000000003, 29.099999999999998, 29.819999999999997, 30.540000000000003, 31.260000000000005, 31.98, 32.7, 33.42, 34.14, 34.86, 35.58, 36.3, 37.019999999999996, 37.74, 38.46, 39.17999999999999, 39.9, 40.62, 41.339999999999996, 42.06, 42.78, 43.5, 44.22, 44.940000000000005, 45.66, 46.379999999999995, 47.1, 47.82, 48.54, 49.26, 49.97999999999999, 50.69999999999999, 51.42, 52.13999999999999, 52.86000000000001, 53.580000000000005, 54.3, 55.019999999999996, 55.739999999999995, 56.459999999999994, 57.18]
+print(np.shape(angle))
 energy=[] 
 A=[]
 B=[]
 for i in range(70):
-    A.append(cmx_tpsci[0:70])
-    del cmx_tpsci[0:70]
+    A.append(fci[0:70])
+    del fci[0:70]
 B.append(A)
 B=np.array(B)
 B=B.reshape(70,70)
@@ -58,18 +53,18 @@ print(B)
 print(C)
 print(type(B))
 print(np.shape(B))
-
-import numpy
+colorcode=[]
+import numpy as np
 import matplotlib.pyplot as plt
 '''
 for i in range(70):
-    plt.plot(radius,B[i][:]) 
-plt.xlabel(' Radius of ring ')
-plt.ylabel('SCF energy')
-plt.title('SCF energy with the variation of Radius')
-plt.savefig('scf_radius.png')
-plt.show()  '''
-
+    plt.plot(angle,B[i][:]) 
+plt.xlabel(' Angle between two H of ring ')
+plt.ylabel('FCI energy')
+plt.title('FCI energy at different radius')
+plt.savefig('fci_angle.png')
+plt.show()  
+'''
 from mpl_toolkits import mplot3d
 import numpy
 from matplotlib import pyplot as plt
@@ -80,9 +75,9 @@ ax.plot_surface(radius, angle, B,cmap='magma', edgecolor='none')
 #plot_sct = ax.scatter(radius, angle, B, color='red')
 ax.set_xlabel(' Radius of ring in x-axis')
 ax.set_ylabel('angle in y-axis')
-ax.set_zlabel('CMX-TPSCI energy')
-ax.set_title(' 3D surface plot of cmx-tpsci energies ')
-plt.savefig('3d_surface_cmx-tpsci.png')
+ax.set_zlabel('FCI energy')
+ax.set_title(' 3D surface plot fci energies ')
+plt.savefig('3d_surface_fci.png')
 plt.show()
 
 
