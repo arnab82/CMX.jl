@@ -111,13 +111,13 @@ for r in 1:70
     ints = orbital_rotation(ints,U)
     println(" done.")
     flush(stdout)
-
+    #=
     println("*************************************************************FCI ENERGY*******************************************************************","\n\n")
 
     ansatz = FCIAnsatz(norb, na, nb)
     solver = SolverSettings(nroots=1, package="Arpack")
     solution = solve(ints, ansatz, solver)
-    display(solution)
+    display(solution)=#
     
     println("*************************************************************CMF ENERGY*******************************************************************","\n\n")
 
@@ -146,22 +146,26 @@ for r in 1:70
 
 
     ψ = FermiCG.BSTstate(clusters, FockConfig(init_fspace), cluster_bases)
-    ept2 = FermiCG.compute_pt2_energy(ψ, cluster_ops, clustered_ham, thresh_foi=1e-6,verbose=1)
-    total_pt2=ept2[1]+nuc_energy
-    println("the value of pt2 correction energy value is",total_pt2)
+    #ept2 = FermiCG.compute_pt2_energy(ψ, cluster_ops, clustered_ham, thresh_foi=1e-6,tol=1e-6,verbose=1)
+    #total_pt2=ept2[1]+ints.h0
+    #println("the value of pt2 correction energy value is",total_pt2)
     display(ψ)
-    σ = FermiCG.build_compressed_1st_order_state(ψ, cluster_ops, clustered_ham, nbody=4, thresh=1e-6)
-    σ = FermiCG.compress(σ, thresh=1e-6)
+    σ = FermiCG.build_compressed_1st_order_state(ψ, cluster_ops, clustered_ham, nbody=4, thresh=1e-9)
+    σ = FermiCG.compress(σ, thresh=1e-9)
 
     #H = FermiCG.nonorth_dot(ψ,σ) 
     H1 = FermiCG.compute_expectation_value(ψ, cluster_ops, clustered_ham)
     H2 = FermiCG.orth_dot(σ,σ)
     H3 = FermiCG.compute_expectation_value(σ, cluster_ops, clustered_ham)
-    sigma2 = FermiCG.build_compressed_1st_order_state(σ, cluster_ops, clustered_ham, nbody=4, thresh=1e-6)
-    sigma2_compressed = FermiCG.compress(sigma2, thresh=1e-6)
+    sigma2 = FermiCG.build_compressed_1st_order_state(σ, cluster_ops, clustered_ham, nbody=4, thresh=1e-9)
+    sigma2_compressed = FermiCG.compress(sigma2, thresh=1e-9)
     H4 = FermiCG.orth_dot(sigma2_compressed,sigma2_compressed)
     H5 = FermiCG.compute_expectation_value(sigma2_compressed, cluster_ops, clustered_ham)
-
+    sigma3 = FermiCG.build_compressed_1st_order_state(sigma2_compressed, cluster_ops, clustered_ham, nbody=4, thresh=1e-9)
+    sigma3_compressed= FermiCG.compress(sigma3, thresh=1e-9)
+    H6 = FermiCG.orth_dot(sigma3_compressed,sigma3_compressed)
+    H7 = FermiCG.compute_expectation_value(sigma3_compressed, cluster_ops, clustered_ham)
+    
 
 
     I_1=H1[1]
@@ -169,13 +173,20 @@ for r in 1:70
     I_3=H3[1]-I_1*H2[1]-2*I_2*H1[1]
     I_4=H4[1]-I_1*H3[1]-3*I_2*H2[1]-3*I_3*H1[1]
     I_5=H5[1]-I_1*H4[1]-4*I_2*H3[1]-6*I_3*H2[1]-4*I_4*H1[1]
-    E_K2=I_1-(I_2*I_2/I_3)*(1+(((I_4*I_2-I_3*I_3)^2)/(I_2*I_2*(I_5*I_3-I_4*I_4))))
-    cmx_2=E_K2+nuc_energy
+    #E_K2=I_1-(I_2*I_2/I_3)*(1+(((I_4*I_2-I_3*I_3)^2)/(I_2*I_2*(I_5*I_3-I_4*I_4))))
+    #cmx_2=E_K2+ints.h0
+    I_6=H6[1]-I_1*H5[1]-5*I_2*H4[1]-10*I_3*H3[1]-10*I_4*H2[1]-5*I_5*H1[1]
+    I_7=H7[1]-I_1*H6[1]-6*I_2*H5[1]-15*I_3*H4[1]-20*I_4*H3[1]-15*I_5*H2[1]
+    I_V=[I_2;I_3;I_4]
+    I_M=[I_3 I_4 I_5;I_4 I_5 I_6;I_5 I_6 I_7]
+    CO_ENERGY=inv(I_M)*I_V
+    CO_ENERGY=I_V'*CO_ENERGY
+    cmx_3=I_1-CO_ENERGY+ints.h0
 
 
-    println("*************************************************************TPSCI-CMX ENERGY*******************************************************************","\n\n")
+    #println("*************************************************************TPSCI-CMX ENERGY*******************************************************************","\n\n")
 
-    cmfstate = FermiCG.TPSCIstate(clusters, FockConfig(init_fspace),R=1,T=Float64)
+    #=cmfstate = FermiCG.TPSCIstate(clusters, FockConfig(init_fspace),R=1,T=Float64)
     cmfstate[FermiCG.FockConfig(init_fspace)][FermiCG.ClusterConfig([1,1,1])] = [1.0]
     display(cmfstate)
     sig = FermiCG.open_matvec_thread(cmfstate, cluster_ops, clustered_ham, nbody=4, thresh=1e-6, prescreen=true)
@@ -204,25 +215,24 @@ for r in 1:70
     I4=H_4[1]-I1*H_3[1]-3*I2*H_2[1]-3*I3*H_1[1]
     I5=H_5[1]-I1*H_4[1]-4*I2*H_3[1]-6*I3*H_2[1]-4*I4*H_1[1]
     EK2=I1-(I2*I2/I3)*(1+(((I4*I2-I3*I3)^2)/(I2*I2*(I5*I3-I4*I4))))
-    cmx2=EK2+nuc_energy
+    cmx2=EK2+nuc_energy=#
 
 
 
 
-    push!(energies_cmx_tpsci,cmx2)
-    push!(energies_cmx_bst,cmx_2)
+    #push!(energies_cmx_tpsci,cmx2)
+    push!(energies_cmx_bst,cmx_3)
     push!(energies_cmf,e_cmf)
-    push!(energies_pt2_bst,total_pt2)
-    push!(fci_energies,solution.energies[1])
-
+    #push!(energies_pt2_bst,total_pt2)
+    #push!(fci_energies,solution.energies[1])
     
 end
 println(energies_cmf)
 println(energies_cmx_bst)
-println(energies_cmx_tpsci)
-println(fci_energies)
-println(energies_pt2_bst)
+#println(energies_cmx_tpsci)
+#println(fci_energies)
+#println(energies_pt2_bst)
 close(io)
 
-plot([energies_cmf.-energies_cmf[end], energies_cmx_bst.-energies_cmx_bst[end], energies_cmx_tpsci.-energies_cmx_tpsci[end],energies_pt2_bst.-energies_pt2_bst[end],fci_energies.-fci_energies[end]]*627.51, labels = ["CMF" "CMX-BST" "CMX-TPSCI" "BST-PT2" "FCI"])
+#plot([energies_cmf.-energies_cmf[end], energies_cmx_bst.-energies_cmx_bst[end], energies_cmx_tpsci.-energies_cmx_tpsci[end],energies_pt2_bst.-energies_pt2_bst[end],fci_energies.-fci_energies[end]]*627.51, labels = ["CMF" "CMX-BST" "CMX-TPSCI" "BST-PT2" "FCI"])
 #savefig("plot_H6_ring.png")
