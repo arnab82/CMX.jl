@@ -2,7 +2,8 @@ using LinearAlgebra
 using FermiCG
 using Printf
 using Test
-
+using ClusterMeanField
+using ActiveSpaceSolvers
 
 molecule = "
 H   0.0     0.0     0.0
@@ -36,23 +37,23 @@ basis = "sto-3g"
 mol     = Molecule(0,1,atoms,basis)
 
 # get integrals
-mf = FermiCG.pyscf_do_scf(mol)
+mf = pyscf_do_scf(mol)
 nbas = size(mf.mo_coeff)[1]
-ints = FermiCG.pyscf_build_ints(mol,mf.mo_coeff, zeros(nbas,nbas));
-#e_fci, d1_fci, d2_fci = FermiCG.pyscf_fci(ints, na, nb, conv_tol=1e-10,max_cycle=100, nroots=1);
+ints = pyscf_build_ints(mol,mf.mo_coeff, zeros(nbas,nbas));
+#e_fci, d1_fci, d2_fci = pyscf_fci(ints, na, nb, conv_tol=1e-10,max_cycle=100, nroots=1);
 e_fci = -18.33022092 + ints.h0
 display(e_fci)
 
 
 # localize orbitals
 C = mf.mo_coeff
-Cl = FermiCG.localize(mf.mo_coeff,"lowdin",mf)
-FermiCG.pyscf_write_molden(mol,Cl,filename="lowdin.molden")
-S = FermiCG.get_ovlp(mf)
+Cl = localize(mf.mo_coeff,"lowdin",mf)
+ClusterMeanField.pyscf_write_molden(mol,Cl,filename="lowdin.molden")
+S = get_ovlp(mf)
 U =  C' * S * Cl
 println(" Rotate Integrals")
 flush(stdout)
-ints = FermiCG.orbital_rotation(ints,U)
+ints = orbital_rotation(ints,U)
 println(" done.")
 flush(stdout)
 
@@ -66,9 +67,9 @@ rdm1a = rdm1
 rdm1b = rdm1
 
 
-e_cmf, U, Da, Db  = FermiCG.cmf_oo(ints, clusters, init_fspace, rdm1a,rdm1b,
+e_cmf, U, Da, Db  = ClusterMeanField.cmf_oo(ints, clusters, init_fspace, rdm1a,rdm1b,
                                         max_iter_oo=20, verbose=0, gconv=1e-7, method="bfgs");
-ints = FermiCG.orbital_rotation(ints,U)
+ints = orbital_rotation(ints,U)
 
 
 max_roots = 400
