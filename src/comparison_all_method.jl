@@ -182,6 +182,28 @@ for r in 1:70
     CO_ENERGY=inv(I_M)*I_V
     CO_ENERGY=I_V'*CO_ENERGY
     cmx_3=I_1-CO_ENERGY+ints.h0
+    #pds approach
+    #=FOR N=4
+    m_11=H6
+    m_12=m_21=H5
+    m_22=m_31=m_13=H4
+    m_32=m_23=m_14=m_41=H3
+    m_33=m_42=m_24=H2
+    m_34=m_43=H1
+    m_44=FermiCG.orth_dot(ψ,ψ)
+    b_1=H7
+    b_2=H6
+    b_3=H4
+    b_4=H3
+
+    m= [m_11 m_12 m_13 m_14; m_21 m_22 m_23 m_24; m_31 m_32 m_33 m_34;m_41 m_42 m_43 m_44]
+    b=[b_1 ;b_2; b_3;b_4]
+    a=m\(-b)
+    display(a)
+    np=pyimport("numpy")
+    en=[1;a]
+    y=np.roots(en)
+    display(y)=#
 
 
     #println("*************************************************************TPSCI-CMX ENERGY*******************************************************************","\n\n")
