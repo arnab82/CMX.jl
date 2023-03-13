@@ -144,7 +144,7 @@ for r in 1:70
     #BST CMX 
     println("*************************************************************BST-CMX ENERGY*******************************************************************","\n\n")
 
-
+    #=
     ψ = FermiCG.BSTstate(clusters, FockConfig(init_fspace), cluster_bases)
     #ept2 = FermiCG.compute_pt2_energy(ψ, cluster_ops, clustered_ham, thresh_foi=1e-6,tol=1e-6,verbose=1)
     #total_pt2=ept2[1]+ints.h0
@@ -173,9 +173,9 @@ for r in 1:70
     I_3=H3[1]-I_1*H2[1]-2*I_2*H1[1]
     I_4=H4[1]-I_1*H3[1]-3*I_2*H2[1]-3*I_3*H1[1]
     I_5=H5[1]-I_1*H4[1]-4*I_2*H3[1]-6*I_3*H2[1]-4*I_4*H1[1]
-    #E_K2=I_1-(I_2*I_2/I_3)*(1+(((I_4*I_2-I_3*I_3)^2)/(I_2*I_2*(I_5*I_3-I_4*I_4))))
-    #cmx_2=E_K2+ints.h0
-    I_6=H6[1]-I_1*H5[1]-5*I_2*H4[1]-10*I_3*H3[1]-10*I_4*H2[1]-5*I_5*H1[1]
+    E_K2=I_1-(I_2*I_2/I_3)*(1+(((I_4*I_2-I_3*I_3)^2)/(I_2*I_2*(I_5*I_3-I_4*I_4))))
+    cmx_2=E_K2+ints.h0
+    #=I_6=H6[1]-I_1*H5[1]-5*I_2*H4[1]-10*I_3*H3[1]-10*I_4*H2[1]-5*I_5*H1[1]
     I_7=H7[1]-I_1*H6[1]-6*I_2*H5[1]-15*I_3*H4[1]-20*I_4*H3[1]-15*I_5*H2[1]
     I_V=[I_2;I_3;I_4]
     I_M=[I_3 I_4 I_5;I_4 I_5 I_6;I_5 I_6 I_7]
@@ -242,12 +242,12 @@ for r in 1:70
 
 
 
-    #push!(energies_cmx_tpsci,cmx2)
-    push!(energies_cmx_bst,cmx_3)
+    #push!(energies_cmx_tpsci,cmx2)=#
+    push!(energies_cmx_bst,cmx_2)
     push!(energies_cmf,e_cmf)
     #push!(energies_pt2_bst,total_pt2)
     #push!(fci_energies,solution.energies[1])
-    
+    =#
 end
 println(energies_cmf)
 println(energies_cmx_bst)
