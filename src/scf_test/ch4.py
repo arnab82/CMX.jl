@@ -4,17 +4,17 @@ from pyscf import gto,scf
 mol = gto.Mole()
 scf_energy=[]
 with open("traj_ch4.xyz","w") as f:
-    for ri in range(0,88):
+    for ri in range(0,140):
         f.write("5")
         f.write("\n")
     ###     PYSCF INPUT
-        r0 = 0.6 + 0.03 * ri
+        r0 = 0.55 - 0.04 * ri
         molecule = """
-        C   {1}  {1}  {1} 
-        H   {0}  {0}   0
-        H    0   {0}  {0}
-        H   {0}   0   {0}
-        H    0    0    0
+        C   0.63  0.63  0.63
+        H   1.26  1.26   0
+        H    0   1.26  1.26
+        H   1.26  0     1.26
+        H  {1}   {1}  {1}
         """.format(r0,r0/2)
         print(molecule)
         f.write(molecule)
