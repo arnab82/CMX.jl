@@ -23,8 +23,8 @@ scf_energies=[]
 geom=[]
 
 basis="sto-3g"
-n_steps = 110
-step_size = .02
+n_steps = 90
+step_size = .04
 energies_cmf=[]
 scf_phi=[]
 for R in range(n_steps):
