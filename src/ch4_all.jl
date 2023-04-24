@@ -1,7 +1,7 @@
 using QCBase
 using RDM
 using FermiCG
-using Printf 
+using Printf
 using Test
 using LinearAlgebra
 using Profile
@@ -13,25 +13,38 @@ using Plots
 using ClusterMeanField
 using ActiveSpaceSolvers
 using Plots
+using Revise
 pyscf=pyimport("pyscf")
+scf=pyimport("pyscf.scf")
+function c_act(orb_no,cluster,coeff)
+    C_ordered = zeros(orb_no,0)
+    for (ci,c) in enumerate(cluster)
+        C_ordered = hcat(C_ordered, coeff[:,c])
+    end
+    return C_ordered
+end
+
 
 
 io = open("traj_ch4.xyz", "w");
 cmf=[]
 cmx=[]
 pt2=[]
-for ri in 0:53
+cepa=[]
+pds=[]
+for ri in 0:40
+    
     println(ri)
     println("\n")
     xyz = @sprintf("%5i\n\n", 5)
     basis = "sto-3g"
     atoms = []
-    r0 = 0.35 - 0.05 * ri
-    push!(atoms,Atom(1,"C", [0.63, 0.63, 0.63]))
-    push!(atoms,Atom(2,"H", [1.26, 1.26, 0]))
+    r0 = 2.26 - 0.04 * ri
+    push!(atoms,Atom(1,"C", [0.63,0.63,0.63]))
+    push!(atoms,Atom(2,"H", [1.26,1.26, 0]))
     push!(atoms,Atom(3,"H", [0, 1.26,1.26]))
     push!(atoms,Atom(4,"H", [1.26,0,1.26]))
-    push!(atoms,Atom(5,"H", [r0, r0,r0]))
+    push!(atoms,Atom(5,"H", [r0,r0,r0]))
     println(atoms)
     for a in atoms
         xyz = xyz * @sprintf("%6s %24.16f %24.16f %24.16f \n", a.symbol, a.xyz[1], a.xyz[2], a.xyz[3])
@@ -39,8 +52,8 @@ for ri in 0:53
     println(xyz)
     write(io, xyz);
     pymol = Molecule(0,1,atoms,basis)
-    na=4
-    nb=4
+    na=5
+    nb=5
     # get integrals
     mf = pyscf_do_scf(pymol)
     nbas = size(mf.mo_coeff)[1]
@@ -48,20 +61,22 @@ for ri in 0:53
     nelec = na + nb
     norb = size(ints.h1,1)
     nuc_energy=mf.energy_nuc()
-    frozen= [1]  
-    C=mf.mo_coeff
-    c_frozen=C[:,frozen]
-    d_frozen=2*c_frozen*c_frozen'
-    clusters=[[2,3,4,6,7,8],[5,9]]
-    #get the active ActiveSpace 
-    function c_act()
-        C_ordered = zeros(norb,0)
-        for (ci,c) in enumerate(clusters)
-            C_ordered = hcat(C_ordered, C[:,c])
-        end
-        return C_ordered
+    if ri ==0
+        C=mf.mo_coeff
+        Cl = localize(C,"boys",pymol)
+        #ClusterMeanField.pyscf_write_molden(pymol,Cl,filename="boys_ch4_sto3g_active.molden")
+        frozen= [1]
+        c_frozen=Cl[:,frozen]
+        d_frozen=2*c_frozen*c_frozen'
+        clusters_1=[[2,6],[3,7],[4,8],[5,9]]
+        #get the active ActiveSpace
+        C_act=c_act(norb,clusters_1,Cl)
+        
+    else
+        @load "_testdata_cmf_ch4.jld2"
+        C_act=C_act
+        d_frozen=d_frozen
     end
-    C_act=c_act()
     mol_1=make_pyscf_mole(pymol)
     h0 = pyscf.gto.mole.energy_nuc(mol_1)
     nuc_energy= pyscf.gto.mole.energy_nuc(mol_1)
@@ -80,46 +95,55 @@ for ri in 0:53
     println(nact)
     h1 = h + j - .5*k
     ints = InCoreInts(h0, h1, h2)
-    clusters    = [(1:6),(7:8)]
-    init_fspace = [(3,3),(1,1)]
+    clusters    = [(1:2),(3:4),(5:6),(7:8)]
+    init_fspace = [(1,1),(1,1),(1,1),(1,1)]
     println("*************************************************************CMF ENERGY*******************************************************************","\n\n")
-
     #define clusters
     clusters = [MOCluster(i,collect(clusters[i])) for i = 1:length(clusters)]
     display(clusters)
     rdm1 = zeros(size(ints.h1))
-    e_cmf, U, d1  = ClusterMeanField.cmf_oo_diis(ints, clusters, init_fspace, RDM1(rdm1, rdm1),maxiter_oo=400, verbose=0, diis_start=3)
+    if ri==0
+        e_cmf, U, d1  = ClusterMeanField.cmf_oo_diis(ints, clusters, init_fspace, RDM1(rdm1,rdm1),maxiter_oo=800, verbose=0, diis_start=3)
+    else
+        e_cmf, U, d1  = ClusterMeanField.cmf_oo_diis(ints, clusters, init_fspace, d1,maxiter_oo=800, verbose=0, diis_start=3)
+    end
     #ClusterMeanField.pyscf_write_molden(pymol,C_act*U,filename="cmf_ch4.molden")
-    #=
-    ints = FermiCG.orbital_rotation(ints,U)
-    e_ref = e_cmf - ints.h0
+    println(typeof(d1))
+    #d1=FermiCG.orbital_rotation(d1,U)
+    C_act=C_act*U
+    ints_1 = FermiCG.orbital_rotation(ints,U)
+    e_ref = e_cmf - ints_1.h0
     max_roots = 100
-    cluster_bases = FermiCG.compute_cluster_eigenbasis(ints, clusters, verbose=0, max_roots=max_roots,
+    cluster_bases = FermiCG.compute_cluster_eigenbasis(ints_1, clusters, verbose=0, max_roots=max_roots,
                                                             init_fspace=init_fspace, rdm1a=d1.a, rdm1b=d1.b, T=Float64)
-    clustered_ham = FermiCG.extract_ClusteredTerms(ints, clusters)
-    cluster_ops = FermiCG.compute_cluster_ops(cluster_bases, ints);
-    FermiCG.add_cmf_operators!(cluster_ops, cluster_bases, ints, d1.a, d1.b);
+    clustered_ham = FermiCG.extract_ClusteredTerms(ints_1, clusters)
+    cluster_ops = FermiCG.compute_cluster_ops(cluster_bases, ints_1);
+    FermiCG.add_cmf_operators!(cluster_ops, cluster_bases, ints_1, d1.a, d1.b);
     ref_fock = FermiCG.FockConfig(init_fspace)
+    @save "_testdata_cmf_ch4.jld2" ints_1 d1 e_cmf clusters init_fspace C_act d_frozen
 
 
-
-    #BST CMX 
-    println("*************************************************************BST-CMX ENERGY*******************************************************************","\n\n")  
+    #BST CMX
+    println("*************************************************************BST-CMX ENERGY*******************************************************************","\n\n")
     #forming bst wavefunction
     ψ = FermiCG.BSTstate(clusters, FockConfig(init_fspace), cluster_bases)
-    #pt2_correction 
+    e_cepa, v_cepa = FermiCG.do_fois_cepa(ψ, cluster_ops, clustered_ham, thresh_foi=1e-3, max_iter=50, tol=1e-8)
+    display(e_cepa+ints_1.h0)
+    push!(cepa,e_cepa+ints_1.h0)
+    #pt2_correction
     ept2 = FermiCG.compute_pt2_energy(ψ, cluster_ops, clustered_ham, thresh_foi=1e-6,tol=1e-6,verbose=1)
-    total_pt2=ept2[1]+ints.h0
+    total_pt2=ept2[1]+ints_1.h0
     println("the value of pt2 correction energy value is",total_pt2)
     push!(pt2,total_pt2)
-    display(ψ)
+    #display(ψ)
+    
     #calculating hamiltonians
     σ = FermiCG.build_compressed_1st_order_state(ψ, cluster_ops, clustered_ham, nbody=4, thresh=1e-6)
-    σ = FermiCG.compress(σ, thresh=1e-6)
+    σ_compressed = FermiCG.compress(σ, thresh=1e-6)
     H1 = FermiCG.compute_expectation_value(ψ, cluster_ops, clustered_ham)
-    H2 = FermiCG.orth_dot(σ,σ)
-    H3 = FermiCG.compute_expectation_value(σ, cluster_ops, clustered_ham)
-    sigma2 = FermiCG.build_compressed_1st_order_state(σ, cluster_ops, clustered_ham, nbody=4, thresh=1e-6)
+    H2 = FermiCG.orth_dot(σ_compressed,σ_compressed)
+    H3 = FermiCG.compute_expectation_value(σ_compressed, cluster_ops, clustered_ham)
+    sigma2 = FermiCG.build_compressed_1st_order_state(σ_compressed, cluster_ops, clustered_ham, nbody=4, thresh=1e-6)
     sigma2_compressed = FermiCG.compress(sigma2, thresh=1e-6)
     H4 = FermiCG.orth_dot(sigma2_compressed,sigma2_compressed)
     H5 = FermiCG.compute_expectation_value(sigma2_compressed, cluster_ops, clustered_ham)
@@ -130,18 +154,34 @@ for ri in 0:53
     I_4=H4[1]-I_1*H3[1]-3*I_2*H2[1]-3*I_3*H1[1]
     I_5=H5[1]-I_1*H4[1]-4*I_2*H3[1]-6*I_3*H2[1]-4*I_4*H1[1]
     E_K2=I_1-(I_2*I_2/I_3)*(1+(((I_4*I_2-I_3*I_3)^2)/(I_2*I_2*(I_5*I_3-I_4*I_4))))
-    cmx_2=E_K2+ints.h0
+    cmx_2=E_K2+ints_1.h0
     println(cmx_2)
     push!(cmx,cmx_2)
-    println("\n\n",r,"\n\n")
-    println(scf)
-    println(cmf)
+    #FOR N=3
+    M_11=H4
+    M_12=M_21=H3
+    M_22=H2
+    M_31=M_13=H2
+    M_32=M_23=H1
+    M_33=FermiCG.orth_dot(ψ,ψ)
+    B_1=H5
+    B_2=H4
+    B_3=H3
+
+    M= [M_11 M_12 M_13; M_21 M_22 M_23; M_31 M_32 M_33]
+    B=[B_1 ;B_2; B_3]
+    A=M\(-B)
+    display(A)
+    np=pyimport("numpy")
+    EN=[1;A]
+    x=np.roots(EN)
+    push!(pds,minimum(x)+ints_1.h0)
+    println("\n\n",ri,"\n\n")
+    println(pds)
     println(cmx)
-    println(pt2)=#
-    println(e_cmf)
+    println(pt2)
     push!(cmf,e_cmf)
     println(cmf)
+    println(cepa)
 end
 close(io)
-plot(cmf)
-savefig("ch4_cmf.png")

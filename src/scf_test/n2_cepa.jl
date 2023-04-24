@@ -124,7 +124,7 @@ for r in 0:50
         print(length(ci))
     end
 
-    pyscf.scf.hf_symm.analyze(mf)
+    #pyscf.scf.hf_symm.analyze(mf)
     mol_1=make_pyscf_mole(pymol)
     #making the integrals
     #ints=ClusterMeanField.pyscf_build_ints(pymol,C_act,d_frozen)
@@ -142,7 +142,7 @@ for r in 0:50
     h2 = pyscf.ao2mo.kernel(mol_1, C_act, aosym="s4",compact=false)
     h2 = reshape(h2, (n_act, n_act, n_act, n_act))
     nact=tr(s*d_frozen*s*C_act*C_act')
-    println(nact)
+    println("the value of nact is",nact)
     if isapprox(abs(nact),0,atol=1e-8) == false
         println(nact)
         display(d_frozen)
@@ -165,7 +165,7 @@ for r in 0:50
     rdm1 = zeros(size(h1))
     println(size(rdm1))
     #d1 = RDM1(n_orb(ints))
-    e_cmf, U, d1  = ClusterMeanField.cmf_oo_diis(ints, clusters, init_fspace, RDM1(rdm1, rdm1), verbose=0, maxiter_oo=800,maxiter_ci=400, diis_start=3)
+    e_cmf, U, d1  = ClusterMeanField.cmf_oo_diis(ints, clusters, init_fspace, RDM1(rdm1, rdm1), verbose=0, maxiter_oo=800,maxiter_ci=400, diis_start=5)
     #e_cmf, U, d1  = ClusterMeanField.cmf_oo(ints, clusters, init_fspace, d1,
                                         #max_iter_oo=100, verbose=0, gconv=1e-6, method="bfgs")
     ClusterMeanField.pyscf_write_molden(pymol,C_act*U,filename="cmf_n2.molden")

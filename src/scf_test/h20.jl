@@ -8,7 +8,7 @@ using Profile
 using Random
 using PyCall
 using Arpack
-#using JLD2
+using JLD2
 using Plots
 using ClusterMeanField
 using ActiveSpaceSolvers
@@ -22,23 +22,21 @@ function c_act(orb_no,cluster,coeff)
     return C_ordered
 end
 
-io = open("traj_ch4.xyz", "w");
+io = open("traj_H20.xyz", "w");
 cmf=[]
 cmx=[]
 pt2=[]
 cepa=[]
-for ri in 0:20
+for ri in 0:30
     println(ri)
     println("\n")
-    xyz = @sprintf("%5i\n\n", 5)
+    xyz = @sprintf("%5i\n\n", 3)
     basis = "sto-3g"
     atoms = []
-    r0 = 1.15 + 0.05 * ri
-    push!(atoms,Atom(1,"C", [r0/2,r0/2,r0/2]))
-    push!(atoms,Atom(2,"H", [r0, r0, 0]))
+    r0 = 0.5 + 0.04 * ri
+    push!(atoms,Atom(1,"O", [0,0,0]))
+    push!(atoms,Atom(2,"H", [0, -r0,r0]))
     push!(atoms,Atom(3,"H", [0, r0,r0]))
-    push!(atoms,Atom(4,"H", [r0,0,r0]))
-    push!(atoms,Atom(5,"H", [0.0,0.0,0.0]))
     println(atoms)
     for a in atoms
         xyz = xyz * @sprintf("%6s %24.16f %24.16f %24.16f \n", a.symbol, a.xyz[1], a.xyz[2], a.xyz[3])
@@ -46,23 +44,28 @@ for ri in 0:20
     println(xyz)
     write(io, xyz);
     pymol = Molecule(0,1,atoms,basis)
-    na=4
-    nb=4
+    na=5
+    nb=5
     # get integrals
-    mf = pyscf_do_scf(pymol)
+    mf = ClusterMeanField.pyscf_do_scf(pymol)
     nbas = size(mf.mo_coeff)[1]
-    ints = pyscf_build_ints(pymol,mf.mo_coeff, zeros(nbas,nbas));
+    ints = ClusterMeanField.pyscf_build_ints(pymol,mf.mo_coeff, zeros(nbas,nbas));
     nelec = na + nb
     norb = size(ints.h1,1)
     nuc_energy=mf.energy_nuc()
-    frozen= [1]
+    
+    frozen=[1]
+    clusters_1=[[2,3,4,5],[6],[7]]
+    # localize orbitals
+    C = mf.mo_coeff
+    Cl = localize(mf.mo_coeff,"lowdin",mf)
+    #ClusterMeanField.pyscf_write_molden(pymol,Cl,filename="lowdin_h20_sto3g.molden")
+    S = get_ovlp(mf)
     C=mf.mo_coeff
-    c_frozen=C[:,frozen]
+    c_frozen=Cl[:,frozen]
     d_frozen=2*c_frozen*c_frozen'
-    clusters_1=[[2,6],[3,7],[4,8],[5,9]]
     #get the active ActiveSpace
-
-    C_act=c_act(norb,clusters_1,C)
+    C_act=c_act(norb,clusters_1,Cl)
     mol_1=make_pyscf_mole(pymol)
     h0 = pyscf.gto.mole.energy_nuc(mol_1)
     nuc_energy= pyscf.gto.mole.energy_nuc(mol_1)
@@ -81,18 +84,18 @@ for ri in 0:20
     println(nact)
     h1 = h + j - .5*k
     ints = InCoreInts(h0, h1, h2)
-    clusters    = [(1:2),(3:4),(5:6),(7:8)]
-    init_fspace = [(1,1),(1,1),(1,1),(1,1)]
+    clusters    = [(1:4),(5:5),(6:6)]
+    init_fspace = [(2,2),(1,1),(1,1)]
     println("*************************************************************CMF ENERGY*******************************************************************","\n\n")
 
     #define clusters
     clusters = [MOCluster(i,collect(clusters[i])) for i = 1:length(clusters)]
     display(clusters)
     rdm1 = zeros(size(ints.h1))
-    e_cmf, U, d1  = ClusterMeanField.cmf_oo_diis(ints, clusters, init_fspace, RDM1(rdm1, rdm1),maxiter_oo=400, verbose=0, diis_start=3)
-    #ClusterMeanField.pyscf_write_molden(pymol,C_act*U,filename="cmf_ch4.molden")
+    e_cmf, U, d1  = ClusterMeanField.cmf_oo_diis(ints, clusters, init_fspace, RDM1(rdm1, rdm1),maxiter_oo=800, verbose=0, diis_start=3)
+    ClusterMeanField.pyscf_write_molden(pymol,C_act*U,filename="cmf_h20.molden")
 
-    ints_1 = FermiCG.orbital_rotation(ints,U)
+    #=ints_1 = FermiCG.orbital_rotation(ints,U)
     e_ref = e_cmf - ints_1.h0
     max_roots = 100
     cluster_bases = FermiCG.compute_cluster_eigenbasis(ints_1, clusters, verbose=0, max_roots=max_roots,
@@ -141,10 +144,8 @@ for ri in 0:20
     println("\n\n",ri,"\n\n")
     println(cmx)=#
     println(pt2)
+    println(cepa)=#
     push!(cmf,e_cmf)
     println(cmf)
-    println(cepa)
 end
 close(io)
-                                                                                                                                                                                                 123,1         Bot
-

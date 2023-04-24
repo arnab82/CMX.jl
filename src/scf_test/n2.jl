@@ -9,6 +9,7 @@ using FermiCG
 pyscf=pyimport("pyscf")
 np=pyimport("numpy")
 symm=pyimport("pyscf.symm")
+
 scf_energy=[]
 atoms = []
 r0 = 0.8 
@@ -16,8 +17,8 @@ push!(atoms,Atom(1,"N", [0.0, 0.0, 0.0]))
 push!(atoms,Atom(2,"N", [1.1, 0.0, 0.0]))
 
 basis = "6-31G"
-basis="sto3g"
-
+#basis="sto3g"
+#basis="cc-pVDZ"
 molecule = """
     N   0.0 0.0 0.0
     N   1.1 0.0 0.0
@@ -42,11 +43,35 @@ println(" Hartree-Fock Energy: ",mf.e_tot)
 norb =size(mf.mo_coeff)[1]
 #print(mf.mo_coeff)
 println(norb)
-
+density_mo=localize_scf(mf,7,3,18)
 pymol = Molecule(0,1,atoms,basis)
 ClusterMeanField.pyscf_write_molden(pymol, mf.mo_coeff,filename="C_RHF_n2.molden")
+C = mf.mo_coeff
 
 
+#=
+mo = symm.symmetrize_orb(mf.mol, mf.mo_coeff)
+osym = symm.label_orb_symm(mf.mol, mf.mol.irrep_name, mf.mol.symm_orb, mo)
+#symm.addons.symmetrize_space(mol, mo, s=None, check=True, tol=1e-07)
+C=mf.mo_coeff
+c0 = []
+cx = []
+cy = []
+
+for i in 1:length(osym)
+    if !(i in frozen)
+        if 'x' in osym[i]
+            push!(cx,i)
+        elseif 'y' in osym[i]
+            push!(cy,i)
+        else
+            push!(c0,i)
+        end
+    end
+end
+blocks=[c0,cx,cy]
+println(blocks)
+=#
 #getting the symmetry based orbitals
 function myocc(mf)    
     mol = mf.mol
@@ -66,9 +91,9 @@ println(sym_map)
 
 
 #getting the clusters for the active space
-clusters = []
+clusters_1= []
 for i in 1:3
-    push!(clusters,[])
+    push!(clusters_1,[])
 end
 println(norb)
 C=mf.mo_coeff   
@@ -76,55 +101,90 @@ C=mf.mo_coeff
 frozen= [1,2]  
 c_frozen=C[:,frozen]
 d_frozen=2*c_frozen*c_frozen'
+#=for i in 1:norb
+    name = mol.irrep_name[sym_map[mf.orbsym[i]]]
+    if !(i in frozen)
+        if name == "A1g"
+            push!(clusters_1[1],i)
+        elseif name == "A1u"
+            push!(clusters_1[1],i)
+        elseif name == "E1gx" 
+            push!(clusters_1[2],i)
+        elseif  name == "E1ux"
+            push!(clusters_1[2],i)
+        elseif name == "E1gy" 
+            push!(clusters_1[3],i)
+        elseif name == "E1uy"
+            push!(clusters_1[3],i)
+        elseif name == "E2gx"
+            push!(clusters_1[4],i)
+        elseif name == "E2ux"
+            push!(clusters_1[4],i)
+        elseif name == "E2gy"
+            push!(clusters_1[5],i)
+        elseif name == "E2uy"
+            push!(clusters_1[5],i)
+        end
+    end
+end=#
 for i in 1:norb
     name = mol.irrep_name[sym_map[mf.orbsym[i]]]
     if !(i in frozen)
         if name == "A1g"
-            push!(clusters[1],i)
+            push!(clusters_1[1],i)
         elseif name == "A1u"
-            push!(clusters[1],i)
+            push!(clusters_1[1],i)
         elseif name == "E1gx" 
-            push!(clusters[2],i)
+            push!(clusters_1[2],i)
         elseif  name == "E1ux"
-            push!(clusters[2],i)
+            push!(clusters_1[2],i)
         elseif name == "E1gy" 
-            push!(clusters[3],i)
+            push!(clusters_1[3],i)
         elseif name == "E1uy"
-            push!(clusters[3],i)
+            push!(clusters_1[3],i)
         end
     end
 end
        
-println(clusters) 
-
-
-
+println(clusters_1) 
 #get the active ActiveSpace 
-
-function c_act()
+#pyscf.scf.hf_symm.analyze(mf)
+function c_act(clusters,norb,coeff)
     C_ordered = zeros(norb,0)
     for (ci,c) in enumerate(clusters)
-        C_ordered = hcat(C_ordered, C[:,c])
+        C_ordered = hcat(C_ordered, coeff[:,c])
     end
     return C_ordered
 end
-C_act=c_act()
-pyscf.tools.molden.from_mo(mol, "C_ordered_n2.molden", C_act)
-
+C_act=c_act(clusters_1,norb,C)
+println(size(C_act))
+#pyscf.tools.molden.from_mo(mol, "C_ordered_n2.molden", C_act)
+#=
 #specify the clusters and initial fock space electrons
+C=mf.mo_coeff
+Cact=C[:,3:28]
+println(size(Cact))
+C_act = localize(Cact,"boys",pymol)
+println(size(C_act))
+#ClusterMeanField.pyscf_write_molden(pymol,Cact,filename="lowdin_n2_test.molden")=#
+
 
 init_fspace = [(3,3), (1,1), (1,1)]
 #clusters=[(1,2,5,8),(4,6),(3,7)]
-clusters=[(1, 2, 3, 4) ,(5, 6), (7, 8)]
+#init_fspace = ((2, 2),(1, 1),(1, 1), (1, 1),(0,0),(0,0))
+#clusters = [(1:5),(6:10),(11:16),(17:22),(23,24),(25,26)]
+
+#clusters=[(1, 2, 4, 8, 9, 12, 15, 16, 24, 26), (5, 6, 11, 13, 17, 20, 22, 24), (4, 7, 10, 14, 18, 19, 21, 25)]
+#clusters=[(1, 2, 3, 4) ,(5, 6), (7, 8)]
 #clusters=[(1, 2), (3, 4, 5, 10, 11, 14, 17, 18), (7, 8, 13, 15), (6, 9, 12, 16)]
-#clusters=[(1:8), (9:12), (13:16)]
+clusters=[(1:8), (9:12), (13:16)]
 println(clusters)
 println(init_fspace)
 for ci in clusters
     print(length(ci))
 end
 
-pyscf.scf.hf_symm.analyze(mf)
+#pyscf.scf.hf_symm.analyze(mf)
 mol_1=make_pyscf_mole(pymol)
 #making the integrals
 #ints=ClusterMeanField.pyscf_build_ints(pymol,C_act,d_frozen)
@@ -143,17 +203,17 @@ h2 = pyscf.ao2mo.kernel(mol_1, C_act, aosym="s4",compact=false)
 h2 = reshape(h2, (n_act, n_act, n_act, n_act))
 nact=tr(s*d_frozen*s*C_act*C_act')
 println(nact)
-if isapprox(abs(nact),0,atol=1e-8) == false
+#=if isapprox(abs(nact),0,atol=1e-8) == false
     println(nact)
     display(d_frozen)
     error(" I found embedded electrons in the active space?!")
 end
-
+=#
 
 h1 = h + j - .5*k
 ints = InCoreInts(h0, h1, h2);
-na=5
-nb=5
+na=7
+nb=7
 nelec = na + nb
 nuc_energy=mol_1.energy_nuc()
 
@@ -170,7 +230,7 @@ e_cmf, U, d1  = ClusterMeanField.cmf_oo_diis(ints, clusters, init_fspace, RDM1(r
                                     #max_iter_oo=100, verbose=0, gconv=1e-6, method="bfgs")
 ClusterMeanField.pyscf_write_molden(pymol,C_act*U,filename="cmf_n2.molden")
 println(e_cmf)
-
+error("jvbj")
 ints = FermiCG.orbital_rotation(ints,U)
 e_ref = e_cmf - ints.h0
 max_roots = 100
@@ -216,6 +276,8 @@ I_5=H5[1]-I_1*H4[1]-4*I_2*H3[1]-6*I_3*H2[1]-4*I_4*H1[1]
 E_K2=I_1-(I_2*I_2/I_3)*(1+(((I_4*I_2-I_3*I_3)^2)/(I_2*I_2*(I_5*I_3-I_4*I_4))))
 cmx_2=E_K2+ints.h0
 println(cmx_2)
+x=[-12.08,-13.9,-19.09]
+minimum(x)
 #=I_6=H6[1]-I_1*H5[1]-5*I_2*H4[1]-10*I_3*H3[1]-10*I_4*H2[1]-5*I_5*H1[1]
     I_7=H7[1]-I_1*H6[1]-6*I_2*H5[1]-15*I_3*H4[1]-20*I_4*H3[1]-15*I_5*H2[1]
     I_V=[I_2;I_3;I_4]
